@@ -49,8 +49,18 @@ API_TIMEOUT = float(os.getenv("API_TIMEOUT", "120"))
 API_MAX_RETRIES = int(os.getenv("API_MAX_RETRIES", "3"))
 
 # Server settings
-SERVER_PORT = int(os.getenv("SERVER_PORT", "8001"))
-CORS_ORIGINS = json.loads(os.getenv(
-    "CORS_ORIGINS",
-    '["http://localhost:5173", "http://localhost:3000"]'
-))
+# Heroku uses PORT env var, fallback to SERVER_PORT for local development
+SERVER_PORT = int(os.getenv("PORT", os.getenv("SERVER_PORT", "8001")))
+
+# CORS origins - allow all in production (same domain), specific origins in development
+# In production, frontend is served from the same domain, so CORS is less restrictive
+_cors_origins_env = os.getenv("CORS_ORIGINS")
+if _cors_origins_env:
+    CORS_ORIGINS = json.loads(_cors_origins_env)
+elif os.getenv("PYTHON_ENV") == "production" or os.getenv("NODE_ENV") == "production":
+    # In production, allow all origins (frontend is on same domain)
+    # FastAPI requires explicit list, so we'll handle "*" in main.py
+    CORS_ORIGINS = ["*"]
+else:
+    # Development defaults
+    CORS_ORIGINS = ["http://localhost:5173", "http://localhost:3000"]

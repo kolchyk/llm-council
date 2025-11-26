@@ -2,13 +2,16 @@
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Dict, Any
 import uuid
 import json
 import asyncio
 import logging
+import os
+from pathlib import Path
 
 from . import storage
 from .council import generate_conversation_title
@@ -34,14 +37,29 @@ logger.info("System initialization complete")
 
 app = FastAPI(title="LLM Council API")
 
-# Enable CORS for local development
+# Enable CORS
+# Handle "*" for production (same domain deployment)
+_cors_origins = CORS_ORIGINS if CORS_ORIGINS != ["*"] else ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files for frontend (production)
+frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
+if frontend_dist.exists():
+    app.mount("/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="assets")
+    # Serve static files from dist root
+    static_files = ["favicon.ico", "vite.svg"]
+    for static_file in static_files:
+        static_path = frontend_dist / static_file
+        if static_path.exists():
+            @app.get(f"/{static_file}")
+            async def serve_static(file_name: str = static_file):
+                return FileResponse(str(frontend_dist / file_name))
 
 
 class CreateConversationRequest(BaseModel):
@@ -86,7 +104,11 @@ class Conversation(BaseModel):
 
 @app.get("/")
 async def root():
-    """Health check endpoint."""
+    """Health check endpoint or serve frontend."""
+    # If frontend is built, serve index.html, otherwise return API info
+    frontend_index = Path(__file__).parent.parent / "frontend" / "dist" / "index.html"
+    if frontend_index.exists():
+        return FileResponse(str(frontend_index))
     return {"status": "ok", "service": "LLM Council API"}
 
 
@@ -435,6 +457,22 @@ async def update_feedback(
         return {"status": "success"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# Catch-all route for SPA routing (must be last)
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str):
+    """Serve frontend for non-API routes."""
+    # Don't interfere with API routes
+    if full_path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="API endpoint not found")
+    
+    # Serve index.html for frontend routes
+    frontend_index = Path(__file__).parent.parent / "frontend" / "dist" / "index.html"
+    if frontend_index.exists():
+        return FileResponse(str(frontend_index))
+    
+    raise HTTPException(status_code=404, detail="Not found")
 
 
 if __name__ == "__main__":

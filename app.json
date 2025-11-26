@@ -1,0 +1,32 @@
+{
+  "name": "LLM Council",
+  "description": "Ensemble Strategy Playground for LLM Council",
+  "repository": "https://github.com/yourusername/llm-council",
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    },
+    {
+      "url": "heroku/python"
+    }
+  ],
+  "env": {
+    "OPENROUTER_API_KEY": {
+      "description": "OpenRouter API key",
+      "required": true
+    },
+    "NODE_ENV": {
+      "value": "production"
+    },
+    "PYTHON_ENV": {
+      "value": "production"
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "free"
+    }
+  }
+}
+
