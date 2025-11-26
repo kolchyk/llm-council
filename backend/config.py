@@ -11,11 +11,12 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 # Council members - list of OpenRouter model identifiers
 # Can be overridden via COUNCIL_MODELS env var as JSON array
+# Updated to latest flagship models as of November 2025
 _DEFAULT_COUNCIL_MODELS = [
-    "openai/gpt-4o",
-    "google/gemini-2.0-flash-exp",
-    "anthropic/claude-3.5-sonnet",
-    "x-ai/grok-2-1212",
+    "openai/gpt-5.1",
+    "anthropic/claude-sonnet-4.5",
+    "google/gemini-3-pro-preview",
+    "x-ai/grok-4.1-fast",
 ]
 
 def _parse_models_env(env_var: str, default: list) -> list:
@@ -33,7 +34,7 @@ def _parse_models_env(env_var: str, default: list) -> list:
 COUNCIL_MODELS = _parse_models_env("COUNCIL_MODELS", _DEFAULT_COUNCIL_MODELS)
 
 # Chairman model - synthesizes final response
-CHAIRMAN_MODEL = os.getenv("CHAIRMAN_MODEL", "google/gemini-2.0-flash-exp")
+CHAIRMAN_MODEL = os.getenv("CHAIRMAN_MODEL", "anthropic/claude-sonnet-4.5")
 
 # OpenRouter API endpoint
 OPENROUTER_API_URL = os.getenv(
